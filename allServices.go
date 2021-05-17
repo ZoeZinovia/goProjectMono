@@ -157,7 +157,7 @@ func saveResultToFile(filename string, result string) {
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	counter++
 	if counter == 1 {
-		start = time.Now()
+		startLED = time.Now()
 	}
 	var led ledStruct
 	ledPin := rpio.Pin(12)
