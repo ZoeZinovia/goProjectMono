@@ -213,7 +213,7 @@ func main() {
 	numIterations := 10000
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
-			sessionStatus = false
+			sessionStatusPir = false
 		}
 		publish(client)
 	}
