@@ -83,6 +83,7 @@ package main
 // 	}
 // }
 import "C"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -103,9 +104,7 @@ var sessionStatusHT bool = true
 var sessionStatusPir bool = true
 var sessionStatusLed bool = true
 var counter int = 0
-var startPIR = time.Now()
-var startHT = time.Now()
-var startLED = time.Now()
+var start = time.Now()
 var dhtStart = time.Now()
 var dhtEnd = time.Now()
 var dhtDuration float64
@@ -134,18 +133,6 @@ type pirStruct struct {
 
 type reading interface {
 	structToJSON() []byte
-}
-
-func saveResultToFile(filename string, result string) {
-	file, errOpen := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if errOpen != nil {
-		log.Fatal(errOpen)
-	}
-	byteSlice := []byte(result)
-	_, errWrite := file.Write(byteSlice)
-	if errWrite != nil {
-		log.Fatal(errWrite)
-	}
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -214,6 +201,22 @@ func getJSON(r reading) []byte {
 	return r.structToJSON()
 }
 
+func byteSliceToIntSlice(bs []byte) []int {
+	strings := strings.Split(string(bs), ",")
+	result := make([]int, len(strings))
+	for i, s := range strings {
+		if len(s) == 0 {
+			continue
+		}
+		n, convErr := strconv.Atoi(s)
+		if convErr != nil {
+			log.Fatal(convErr)
+		}
+		result[i] = n
+	}
+	return result
+}
+
 func (ts tempStruct) structToJSON() []byte {
 	jsonReading, jsonErr := json.Marshal(ts)
 	if jsonErr != nil {
@@ -238,22 +241,6 @@ func (ps pirStruct) structToJSON() []byte {
 	return jsonReading
 }
 
-func byteSliceToIntSlice(bs []byte) []int {
-	strings := strings.Split(string(bs), ",")
-	result := make([]int, len(strings))
-	for i, s := range strings {
-		if len(s) == 0 {
-			continue
-		}
-		n, convErr := strconv.Atoi(s)
-		if convErr != nil {
-			log.Fatal(convErr)
-		}
-		result[i] = n
-	}
-	return result
-}
-
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("Connected")
 }
@@ -262,8 +249,19 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 	fmt.Printf("Connection lost: %v", err)
 }
 
-func main() {
+func saveResultToFile(filename string, result string) {
+	file, errOpen := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if errOpen != nil {
+		log.Fatal(errOpen)
+	}
+	byteSlice := []byte(result)
+	_, errWrite := file.Write(byteSlice)
+	if errWrite != nil {
+		log.Fatal(errWrite)
+	}
+}
 
+func main() {
 	// Save the IP address
 	if len(os.Args) <= 1 {
 		fmt.Println("IP address must be provided as a command line argument")
@@ -271,12 +269,6 @@ func main() {
 	}
 	ADDRESS = os.Args[1]
 	fmt.Println(ADDRESS)
-
-	// Check that RPIO opened correctly
-	if err := rpio.Open(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 
 	// End program with ctrl-C
 	c := make(chan os.Signal, 1)
@@ -289,8 +281,6 @@ func main() {
 	// Creat MQTT client
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", ADDRESS, PORT))
-	opts.SetClientID("go_mqtt_client_pir")
-	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
 	client := mqtt.NewClient(opts)
@@ -298,7 +288,7 @@ func main() {
 		panic(token.Error())
 	}
 
-	// Publish to PIR topic
+	// Publish to topic
 	numIterations := 10000
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
@@ -307,12 +297,7 @@ func main() {
 		publish(client, "pir")
 	}
 
-	endPIR := time.Now()
-	durationPIR := endPIR.Sub(startPIR).Seconds()
-	resultString := fmt.Sprint("PIR runtime = ", durationPIR, "\n")
-	saveResultToFile("piResultsGoMono.txt", resultString)
-	fmt.Println("PIR runtime = ", durationPIR)
-
+	// Publish to topic
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
 			sessionStatusHT = false
@@ -320,14 +305,11 @@ func main() {
 		publish(client, "dht")
 	}
 
-	// Publish to dht topic
-
 	// Disconnect
 	client.Disconnect(100)
-
-	endHT := time.Now()
-	durationHT := endHT.Sub(startHT).Seconds()
-	resultString = fmt.Sprint("Humidity and temperature runtime = ", durationHT, "\n")
-	saveResultToFile("piResultsGoMono.txt", resultString)
-	fmt.Println("Humidity and temperature runtime = ", durationHT)
+	end := time.Now()
+	duration := end.Sub(start).Seconds()
+	resultString := fmt.Sprint("Humidity and temperature runtime = ", duration, "\n")
+	saveResultToFile("piResultsGo.txt", resultString)
+	fmt.Println("Humidity and temperature runtime at end =", duration)
 }
