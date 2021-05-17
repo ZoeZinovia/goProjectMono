@@ -96,10 +96,22 @@ import (
 	rpio "github.com/stianeikeland/go-rpio"
 )
 
-var sessionStatus bool = true
+var sessionStatusHT bool = true
+var sessionStatusPir bool = true
+var sessionStatusLed bool = true
 var counter int = 0
 var start = time.Now()
-var TOPIC string = "PIR"
+var dhtStart = time.Now()
+var dhtEnd = time.Now()
+var dhtDuration float64
+var TOPIC_H string = "Humidity"
+var TOPIC_T string = "Temperature"
+var TOPIC_P string = "PIR"
+var TOPIC_L string = "LED"
+var ADDRESS string
+var PORT = 1883
+var temperatureReading float32 = 0
+var humidityReading float32 = 0
 
 type pirStruct struct {
 	PIR bool
@@ -122,9 +134,9 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 }
 
 func publish(client mqtt.Client) {
-	if !sessionStatus {
+	if !sessionStatusPir {
 		doneString := "{\"Done\": \"True\"}"
-		client.Publish(TOPIC, 0, false, doneString)
+		client.Publish(TOPIC_P, 0, false, doneString)
 		return
 	} else {
 		pirPin := rpio.Pin(17)
@@ -140,7 +152,7 @@ func publish(client mqtt.Client) {
 			PIR: pirReading,
 		}
 		jsonPIR := currentPIR.structToJSON()
-		client.Publish(TOPIC, 0, false, string(jsonPIR))
+		client.Publish(TOPIC_P, 0, false, string(jsonPIR))
 		return
 	}
 }
@@ -160,9 +172,6 @@ var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
 	fmt.Printf("Connection lost: %v", err)
 }
-
-var ADDRESS string
-var PORT = 1883
 
 func main() {
 
