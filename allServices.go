@@ -206,7 +206,7 @@ func publish(client mqtt.Client) {
 	// } else {
 	// 	pirReading = false
 	// }
-	piReading := true
+	pirReading := true
 	currentTemperature := tempStruct{
 		Temp: temperatureReading,
 		Unit: "C",
