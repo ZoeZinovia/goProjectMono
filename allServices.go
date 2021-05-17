@@ -196,16 +196,17 @@ func publish(client mqtt.Client) {
 			humidityReading = float32(mySlice[0] + (mySlice[1] / 10))
 		}
 	}
-	// PIR reading
-	pirPin := rpio.Pin(17)
-	pirPin.Input()
-	readValue := pirPin.Read()
-	var pirReading bool
-	if int(readValue) == 1 {
-		pirReading = true
-	} else {
-		pirReading = false
-	}
+	// // PIR reading
+	// pirPin := rpio.Pin(17)
+	// pirPin.Input()
+	// readValue := pirPin.Read()
+	// var pirReading bool
+	// if int(readValue) == 1 {
+	// 	pirReading = true
+	// } else {
+	// 	pirReading = false
+	// }
+	piReading := true
 	currentTemperature := tempStruct{
 		Temp: temperatureReading,
 		Unit: "C",
