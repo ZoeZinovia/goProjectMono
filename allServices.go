@@ -129,6 +129,11 @@ type humStruct struct {
 	Unit     string
 }
 
+type ledStruct struct {
+	LED_1 bool
+	GPIO  int
+}
+
 type pirStruct struct {
 	PIR bool
 }
@@ -150,7 +155,31 @@ func saveResultToFile(filename string, result string) {
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Println("Message received")
+	counter++
+	if counter == 1 {
+		start = time.Now()
+	}
+	var led ledStruct
+	ledPin := rpio.Pin(12)
+	if strings.Contains(string(msg.Payload()), "Done") {
+		sessionStatusLed = false
+		ledPin.Output()
+		ledPin.Low()
+		endLED := time.Now()
+		durationLED := endLED.Sub(startLED).Seconds()
+		resultString := fmt.Sprint("LED subsriber runtime = ", durationLED, "\n")
+		saveResultToFile("piResultsGoMono.txt", resultString)
+		fmt.Println("LED subsriber runtime = ", durationLED)
+	} else {
+		json.Unmarshal([]byte(msg.Payload()), &led)
+		ledPin = rpio.Pin(led.GPIO)
+		ledPin.Output()
+		if led.LED_1 {
+			ledPin.High()
+		} else {
+			ledPin.Low()
+		}
+	}
 }
 
 func publish(client mqtt.Client, sensor string) {
