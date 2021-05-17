@@ -309,7 +309,7 @@ func main() {
 		if i == numIterations-1 {
 			sessionStatusHT = false
 		}
-		publish(client, "dhtk")
+		publish(client, "dht")
 	}
 
 	// Publish to dht topic
