@@ -113,8 +113,22 @@ var PORT = 1883
 var temperatureReading float32 = 0
 var humidityReading float32 = 0
 
+type tempStruct struct {
+	Temp float32
+	Unit string
+}
+
+type humStruct struct {
+	Humidity float32
+	Unit     string
+}
+
 type pirStruct struct {
 	PIR bool
+}
+
+type reading interface {
+	structToJSON() []byte
 }
 
 func saveResultToFile(filename string, result string) {
@@ -155,6 +169,26 @@ func publish(client mqtt.Client) {
 		client.Publish(TOPIC_P, 0, false, string(jsonPIR))
 		return
 	}
+}
+
+func getJSON(r reading) []byte {
+	return r.structToJSON()
+}
+
+func (ts tempStruct) structToJSON() []byte {
+	jsonReading, jsonErr := json.Marshal(ts)
+	if jsonErr != nil {
+		log.Fatal(jsonErr)
+	}
+	return jsonReading
+}
+
+func (ts humStruct) structToJSON() []byte {
+	jsonReading, jsonErr := json.Marshal(ts)
+	if jsonErr != nil {
+		log.Fatal(jsonErr)
+	}
+	return jsonReading
 }
 
 func (ps pirStruct) structToJSON() []byte {
