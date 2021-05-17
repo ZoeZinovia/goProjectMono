@@ -103,7 +103,9 @@ var sessionStatusHT bool = true
 var sessionStatusPir bool = true
 var sessionStatusLed bool = true
 var counter int = 0
-var start = time.Now()
+var startPIR = time.Now()
+var startHT = time.Now()
+var startLED = time.Now()
 var dhtStart = time.Now()
 var dhtEnd = time.Now()
 var dhtDuration float64
@@ -305,6 +307,12 @@ func main() {
 		publish(client, "pir")
 	}
 
+	endPIR := time.Now()
+	durationPIR := endPIR.Sub(startPIR).Seconds()
+	resultString := fmt.Sprint("PIR runtime = ", durationPIR, "\n")
+	saveResultToFile("piResultsGoMono.txt", resultString)
+	fmt.Println("PIR runtime = ", durationPIR)
+
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
 			sessionStatusHT = false
@@ -317,9 +325,9 @@ func main() {
 	// Disconnect
 	client.Disconnect(100)
 
-	end := time.Now()
-	duration := end.Sub(start).Seconds()
-	resultString := fmt.Sprint("PIR runtime = ", duration, "\n")
-	saveResultToFile("piResultsGo.txt", resultString)
-	fmt.Println("PIR runtime = ", duration)
+	endHT := time.Now()
+	durationHT := endHT.Sub(startHT).Seconds()
+	resultString = fmt.Sprint("PIR runtime = ", durationHT, "\n")
+	saveResultToFile("piResultsGoMono.txt", resultString)
+	fmt.Println("PIR runtime = ", durationHT)
 }
