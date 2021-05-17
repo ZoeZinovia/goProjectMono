@@ -87,7 +87,6 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -140,48 +139,52 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 }
 
 func publish(client mqtt.Client, sensor string) {
-	if !sessionStatusHT && (sensor == "dht") {
-		doneString := "{\"Done\": \"True\"}"
-		client.Publish(TOPIC_T, 0, false, doneString)
-		client.Publish(TOPIC_H, 0, false, doneString)
-		return
-	} else if !sessionStatusPir && (sensor == "pir") {
+	// if !sessionStatusHT && (sensor == "dht") {
+	// 	doneString := "{\"Done\": \"True\"}"
+	// 	client.Publish(TOPIC_T, 0, false, doneString)
+	// 	client.Publish(TOPIC_H, 0, false, doneString)
+	// 	return
+	// } else
+	fmt.Println("in first part")
+	if !sessionStatusPir && (sensor == "pir") {
 		doneString := "{\"Done\": \"True\"}"
 		client.Publish(TOPIC_P, 0, false, doneString)
 		return
-	} else if sensor == "dht" {
-		dhtEnd = time.Now()
-		dhtDuration = dhtEnd.Sub(dhtStart).Seconds()
-		if (temperatureReading == 0 && humidityReading == 0) || dhtDuration > 1 {
-			C.read_dht_data()
-			dhtStart = time.Now()
-			byteSlice, readErr := ioutil.ReadFile("reading.txt")
-			if readErr != nil {
-				log.Fatal(readErr)
-			}
-			mySlice := byteSliceToIntSlice(byteSlice)
-			if mySlice[0] != 0 && mySlice[2] != 0 {
-				temperatureReading = float32(mySlice[2] + (mySlice[3] / 10))
-				humidityReading = float32(mySlice[0] + (mySlice[1] / 10))
-			}
-		}
-		currentTemperature := tempStruct{
-			Temp: temperatureReading,
-			Unit: "C",
-		}
-		currentHumidity := humStruct{
-			Humidity: humidityReading,
-			Unit:     "%",
-		}
-		jsonTemperature := currentTemperature.structToJSON()
-		jsonHumidity := currentHumidity.structToJSON()
-		client.Publish(TOPIC_T, 0, false, string(jsonTemperature))
-		client.Publish(TOPIC_H, 0, false, string(jsonHumidity))
-		return
+		// } else if sensor == "dht" {
+		// 	dhtEnd = time.Now()
+		// 	dhtDuration = dhtEnd.Sub(dhtStart).Seconds()
+		// 	if (temperatureReading == 0 && humidityReading == 0) || dhtDuration > 1 {
+		// 		C.read_dht_data()
+		// 		dhtStart = time.Now()
+		// 		byteSlice, readErr := ioutil.ReadFile("reading.txt")
+		// 		if readErr != nil {
+		// 			log.Fatal(readErr)
+		// 		}
+		// 		mySlice := byteSliceToIntSlice(byteSlice)
+		// 		if mySlice[0] != 0 && mySlice[2] != 0 {
+		// 			temperatureReading = float32(mySlice[2] + (mySlice[3] / 10))
+		// 			humidityReading = float32(mySlice[0] + (mySlice[1] / 10))
+		// 		}
+		// 	}
+		// 	currentTemperature := tempStruct{
+		// 		Temp: temperatureReading,
+		// 		Unit: "C",
+		// 	}
+		// 	currentHumidity := humStruct{
+		// 		Humidity: humidityReading,
+		// 		Unit:     "%",
+		// 	}
+		// 	jsonTemperature := currentTemperature.structToJSON()
+		// 	jsonHumidity := currentHumidity.structToJSON()
+		// 	client.Publish(TOPIC_T, 0, false, string(jsonTemperature))
+		// 	client.Publish(TOPIC_H, 0, false, string(jsonHumidity))
+		// 	return
 	} else if sensor == "pir" {
+		fmt.Println("in second part")
 		pirPin := rpio.Pin(17)
 		pirPin.Input()
 		readValue := pirPin.Read()
+		fmt.Println("all goodo")
 		var pirReading bool
 		if int(readValue) == 1 {
 			pirReading = true
