@@ -318,9 +318,9 @@ func main() {
 		panic(token.Error())
 	}
 
-	// Subscribe to topic
-	token := client.Subscribe(TOPIC_Led, 1, nil)
-	token.Wait()
+	// // Subscribe to topic
+	// token := client.Subscribe(TOPIC_Led, 1, nil)
+	// token.Wait()
 
 	// Publish to topic
 	numIterations := 10000
@@ -332,10 +332,10 @@ func main() {
 		publish(client)
 	}
 
-	// Stay in loop to receive message
-	for sessionStatusLED {
-		//Do nothing
-	}
+	// // Stay in loop to receive message
+	// for sessionStatusLED {
+	// 	//Do nothing
+	// }
 
 	// Disconnect
 	client.Disconnect(100)
