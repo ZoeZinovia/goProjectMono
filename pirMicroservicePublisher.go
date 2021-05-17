@@ -305,6 +305,13 @@ func main() {
 		publish(client, "pir")
 	}
 
+	for i := 0; i < numIterations; i++ {
+		if i == numIterations-1 {
+			sessionStatusHT = false
+		}
+		publish(client, "dhtk")
+	}
+
 	// Publish to dht topic
 
 	// Disconnect
