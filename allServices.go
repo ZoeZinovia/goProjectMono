@@ -97,6 +97,7 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	rpio "github.com/stianeikeland/go-rpio"
 )
 
 var sessionStatusHT bool = true
