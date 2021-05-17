@@ -97,11 +97,12 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	rpio "github.com/stianeikeland/go-rpio"
 )
 
 var sessionStatusHT bool = true
 var sessionStatusPir bool = true
-var sessionStatusLED bool = true
+var sessionStatusLed bool = true
 var counter int = 0
 var start = time.Now()
 var dhtStart = time.Now()
@@ -109,8 +110,8 @@ var dhtEnd = time.Now()
 var dhtDuration float64
 var TOPIC_H string = "Humidity"
 var TOPIC_T string = "Temperature"
-var TOPIC_Pir string = "PIR"
-var TOPIC_Led string = "LED"
+var TOPIC_P string = "PIR"
+var TOPIC_L string = "LED"
 var ADDRESS string
 var PORT = 1883
 var temperatureReading float32 = 0
@@ -130,102 +131,70 @@ type pirStruct struct {
 	PIR bool
 }
 
-type ledStruct struct {
-	LED_1 bool
-	GPIO  int
-}
-
 type reading interface {
 	structToJSON() []byte
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Println("Message received")
-	// counter++
-	// if counter == 1 {
-	// 	start = time.Now()
-	// }
-	// var led ledStruct
-	// ledPin := rpio.Pin(12)
-	// if strings.Contains(string(msg.Payload()), "Done") {
-	// 	sessionStatusLED = false
-	// 	ledPin.Output()
-	// 	ledPin.Low()
-	// 	end := time.Now()
-	// 	duration := end.Sub(start).Seconds()
-	// 	resultString := fmt.Sprint("LED subsriber runtime = ", duration, "\n")
-	// 	saveResultToFile("piResultsGo.txt", resultString)
-	// 	fmt.Println("LED subsriber runtime = ", duration)
-	// } else {
-	// 	json.Unmarshal([]byte(msg.Payload()), &led)
-	// 	ledPin = rpio.Pin(led.GPIO)
-	// 	ledPin.Output()
-	// 	if led.LED_1 {
-	// 		ledPin.High()
-	// 	} else {
-	// 		ledPin.Low()
-	// 	}
-	// }
 }
 
-func publish(client mqtt.Client) {
-	if !sessionStatusHT {
+func publish(client mqtt.Client, sensor string) {
+	if !sessionStatusHT && (sensor == "dht") {
 		doneString := "{\"Done\": \"True\"}"
 		client.Publish(TOPIC_T, 0, false, doneString)
 		client.Publish(TOPIC_H, 0, false, doneString)
 		return
-	}
-	if !sessionStatusPir {
+	} else if !sessionStatusPir && (sensor == "pir") {
 		doneString := "{\"Done\": \"True\"}"
-		client.Publish(TOPIC_Pir, 0, false, doneString)
+		client.Publish(TOPIC_P, 0, false, doneString)
+		return
+	} else if sensor == "dht" {
+		dhtEnd = time.Now()
+		dhtDuration = dhtEnd.Sub(dhtStart).Seconds()
+		if (temperatureReading == 0 && humidityReading == 0) || dhtDuration > 1 {
+			C.read_dht_data()
+			dhtStart = time.Now()
+			byteSlice, readErr := ioutil.ReadFile("reading.txt")
+			if readErr != nil {
+				log.Fatal(readErr)
+			}
+			mySlice := byteSliceToIntSlice(byteSlice)
+			if mySlice[0] != 0 && mySlice[2] != 0 {
+				temperatureReading = float32(mySlice[2] + (mySlice[3] / 10))
+				humidityReading = float32(mySlice[0] + (mySlice[1] / 10))
+			}
+		}
+		currentTemperature := tempStruct{
+			Temp: temperatureReading,
+			Unit: "C",
+		}
+		currentHumidity := humStruct{
+			Humidity: humidityReading,
+			Unit:     "%",
+		}
+		jsonTemperature := currentTemperature.structToJSON()
+		jsonHumidity := currentHumidity.structToJSON()
+		client.Publish(TOPIC_T, 0, false, string(jsonTemperature))
+		client.Publish(TOPIC_H, 0, false, string(jsonHumidity))
+		return
+	} else if sensor == "pir" {
+		pirPin := rpio.Pin(17)
+		pirPin.Input()
+		readValue := pirPin.Read()
+		var pirReading bool
+		if int(readValue) == 1 {
+			pirReading = true
+		} else {
+			pirReading = false
+		}
+		currentPIR := pirStruct{
+			PIR: pirReading,
+		}
+		jsonPIR := getJSON(currentPIR)
+		client.Publish(TOPIC_P, 0, false, string(jsonPIR))
 		return
 	}
-	dhtEnd = time.Now()
-	dhtDuration = dhtEnd.Sub(dhtStart).Seconds()
-	// Humidity and temperature readings
-	if (temperatureReading == 0 && humidityReading == 0) || dhtDuration > 1 {
-		C.read_dht_data()
-		dhtStart = time.Now()
-		byteSlice, readErr := ioutil.ReadFile("reading.txt")
-		if readErr != nil {
-			log.Fatal(readErr)
-		}
-		mySlice := byteSliceToIntSlice(byteSlice)
-		if mySlice[0] != 0 && mySlice[2] != 0 {
-			temperatureReading = float32(mySlice[2] + (mySlice[3] / 10))
-			humidityReading = float32(mySlice[0] + (mySlice[1] / 10))
-		}
-	}
-	// // PIR reading
-	// pirPin := rpio.Pin(17)
-	// pirPin.Input()
-	// readValue := pirPin.Read()
-	// var pirReading bool
-	// if int(readValue) == 1 {
-	// 	pirReading = true
-	// } else {
-	// 	pirReading = false
-	// }
-	pirReading := true
-	currentTemperature := tempStruct{
-		Temp: temperatureReading,
-		Unit: "C",
-	}
-	currentHumidity := humStruct{
-		Humidity: humidityReading,
-		Unit:     "%",
-	}
-	currentPIR := pirStruct{
-		PIR: pirReading,
-	}
-	// Publish messages
-	jsonTemperature := getJSON(currentTemperature)
-	jsonHumidity := getJSON(currentHumidity)
-	jsonPIR := getJSON(currentPIR)
-	client.Publish(TOPIC_T, 0, false, string(jsonTemperature))
-	client.Publish(TOPIC_H, 0, false, string(jsonHumidity))
-	client.Publish(TOPIC_Pir, 0, false, string(jsonPIR))
-	return
 }
 
 func getJSON(r reading) []byte {
@@ -263,6 +232,7 @@ func (ts humStruct) structToJSON() []byte {
 	}
 	return jsonReading
 }
+
 func (ps pirStruct) structToJSON() []byte {
 	jsonReading, jsonErr := json.Marshal(ps)
 	if jsonErr != nil {
@@ -318,24 +288,22 @@ func main() {
 		panic(token.Error())
 	}
 
-	// // Subscribe to topic
-	// token := client.Subscribe(TOPIC_Led, 1, nil)
-	// token.Wait()
-
 	// Publish to topic
 	numIterations := 10000
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
-			sessionStatusHT = false
 			sessionStatusPir = false
 		}
-		publish(client)
+		publish(client, "pir")
 	}
 
-	// // Stay in loop to receive message
-	// for sessionStatusLED {
-	// 	//Do nothing
-	// }
+	// Publish to topic
+	for i := 0; i < numIterations; i++ {
+		if i == numIterations-1 {
+			sessionStatusHT = false
+		}
+		publish(client, "dht")
+	}
 
 	// Disconnect
 	client.Disconnect(100)
