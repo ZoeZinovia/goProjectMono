@@ -178,17 +178,17 @@ func publish(client mqtt.Client, sensor string) {
 		client.Publish(TOPIC_H, 0, false, string(jsonHumidity))
 		return
 	} else if sensor == "pir" {
-		// pirPin := rpio.Pin(17)
-		// pirPin.Input()
-		// readValue := pirPin.Read()
-		// var pirReading bool
-		// if int(readValue) == 1 {
-		// 	pirReading = true
-		// } else {
-		// 	pirReading = false
-		// }
+		pirPin := rpio.Pin(17)
+		pirPin.Input()
+		readValue := pirPin.Read()
+		var pirReading bool
+		if int(readValue) == 1 {
+			pirReading = true
+		} else {
+			pirReading = false
+		}
 		currentPIR := pirStruct{
-			PIR: true,
+			PIR: pirReading,
 		}
 		jsonPIR := getJSON(currentPIR)
 		client.Publish(TOPIC_P, 0, false, string(jsonPIR))
