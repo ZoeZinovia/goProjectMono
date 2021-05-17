@@ -86,9 +86,12 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -147,12 +150,46 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	fmt.Println("Message received")
 }
 
-func publish(client mqtt.Client) {
-	if !sessionStatusPir {
+func publish(client mqtt.Client, sensor string) {
+	if !sessionStatusHT && (sensor == "dht") {
+		doneString := "{\"Done\": \"True\"}"
+		client.Publish(TOPIC_T, 0, false, doneString)
+		client.Publish(TOPIC_H, 0, false, doneString)
+		return
+	} else if !sessionStatusPir && (sensor == "pir") {
 		doneString := "{\"Done\": \"True\"}"
 		client.Publish(TOPIC_P, 0, false, doneString)
 		return
-	} else {
+	} else if sensor == "dht" {
+		dhtEnd = time.Now()
+		dhtDuration = dhtEnd.Sub(dhtStart).Seconds()
+		if (temperatureReading == 0 && humidityReading == 0) || dhtDuration > 1 {
+			C.read_dht_data()
+			dhtStart = time.Now()
+			byteSlice, readErr := ioutil.ReadFile("reading.txt")
+			if readErr != nil {
+				log.Fatal(readErr)
+			}
+			mySlice := byteSliceToIntSlice(byteSlice)
+			if mySlice[0] != 0 && mySlice[2] != 0 {
+				temperatureReading = float32(mySlice[2] + (mySlice[3] / 10))
+				humidityReading = float32(mySlice[0] + (mySlice[1] / 10))
+			}
+		}
+		currentTemperature := tempStruct{
+			Temp: temperatureReading,
+			Unit: "C",
+		}
+		currentHumidity := humStruct{
+			Humidity: humidityReading,
+			Unit:     "%",
+		}
+		jsonTemperature := currentTemperature.structToJSON()
+		jsonHumidity := currentHumidity.structToJSON()
+		client.Publish(TOPIC_T, 0, false, string(jsonTemperature))
+		client.Publish(TOPIC_H, 0, false, string(jsonHumidity))
+		return
+	} else if sensor == "pir" {
 		pirPin := rpio.Pin(17)
 		pirPin.Input()
 		readValue := pirPin.Read()
@@ -165,7 +202,7 @@ func publish(client mqtt.Client) {
 		currentPIR := pirStruct{
 			PIR: pirReading,
 		}
-		jsonPIR := currentPIR.structToJSON()
+		jsonPIR := getJSON(currentPIR)
 		client.Publish(TOPIC_P, 0, false, string(jsonPIR))
 		return
 	}
@@ -197,6 +234,22 @@ func (ps pirStruct) structToJSON() []byte {
 		log.Fatal(jsonErr)
 	}
 	return jsonReading
+}
+
+func byteSliceToIntSlice(bs []byte) []int {
+	strings := strings.Split(string(bs), ",")
+	result := make([]int, len(strings))
+	for i, s := range strings {
+		if len(s) == 0 {
+			continue
+		}
+		n, convErr := strconv.Atoi(s)
+		if convErr != nil {
+			log.Fatal(convErr)
+		}
+		result[i] = n
+	}
+	return result
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -243,14 +296,16 @@ func main() {
 		panic(token.Error())
 	}
 
-	// Publish to topic
+	// Publish to PIR topic
 	numIterations := 10000
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
 			sessionStatusPir = false
 		}
-		publish(client)
+		publish(client, "pir")
 	}
+
+	// Publish to dht topic
 
 	// Disconnect
 	client.Disconnect(100)
