@@ -1,0 +1,13 @@
+#Script to run 3 go scripts in parallel on the publisher side.
+#Run by using the following line in the correct directory in terminal: bash runCppScripts <ipaddress of raspberry pi>
+#$1 represents the passed argument (ipaddress).
+
+start=$(date +%s.%N)
+
+/usr/bin/time -v -o memoryResultsGoMono.txt -a ./allServices $1;
+
+end=$(date +%s.%N)
+
+awk -v var1="$start" -v var2="$end" 'BEGIN {print "Overall runtime: " + var2 - var1}'
+
+exit

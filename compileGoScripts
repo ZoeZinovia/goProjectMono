@@ -1,0 +1,6 @@
+#Compile go scripts in on the publisher side.
+#Run by using the following line in the correct directory in terminal: bash compileGoScripts
+
+go build -o allServices allServices.go
+
+exit
