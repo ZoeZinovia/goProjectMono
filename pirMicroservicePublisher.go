@@ -327,7 +327,7 @@ func main() {
 
 	endHT := time.Now()
 	durationHT := endHT.Sub(startHT).Seconds()
-	resultString = fmt.Sprint("PIR runtime = ", durationHT, "\n")
+	resultString = fmt.Sprint("Humidity and temperature runtime = ", durationHT, "\n")
 	saveResultToFile("piResultsGoMono.txt", resultString)
 	fmt.Println("PIR runtime = ", durationHT)
 }
