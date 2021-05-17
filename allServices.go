@@ -97,7 +97,6 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	rpio "github.com/stianeikeland/go-rpio"
 )
 
 var sessionStatusHT bool = true
@@ -141,31 +140,32 @@ type reading interface {
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	counter++
-	if counter == 1 {
-		start = time.Now()
-	}
-	var led ledStruct
-	ledPin := rpio.Pin(12)
-	if strings.Contains(string(msg.Payload()), "Done") {
-		sessionStatusLED = false
-		ledPin.Output()
-		ledPin.Low()
-		end := time.Now()
-		duration := end.Sub(start).Seconds()
-		resultString := fmt.Sprint("LED subsriber runtime = ", duration, "\n")
-		saveResultToFile("piResultsGo.txt", resultString)
-		fmt.Println("LED subsriber runtime = ", duration)
-	} else {
-		json.Unmarshal([]byte(msg.Payload()), &led)
-		ledPin = rpio.Pin(led.GPIO)
-		ledPin.Output()
-		if led.LED_1 {
-			ledPin.High()
-		} else {
-			ledPin.Low()
-		}
-	}
+	fmt.Println("Message received")
+	// counter++
+	// if counter == 1 {
+	// 	start = time.Now()
+	// }
+	// var led ledStruct
+	// ledPin := rpio.Pin(12)
+	// if strings.Contains(string(msg.Payload()), "Done") {
+	// 	sessionStatusLED = false
+	// 	ledPin.Output()
+	// 	ledPin.Low()
+	// 	end := time.Now()
+	// 	duration := end.Sub(start).Seconds()
+	// 	resultString := fmt.Sprint("LED subsriber runtime = ", duration, "\n")
+	// 	saveResultToFile("piResultsGo.txt", resultString)
+	// 	fmt.Println("LED subsriber runtime = ", duration)
+	// } else {
+	// 	json.Unmarshal([]byte(msg.Payload()), &led)
+	// 	ledPin = rpio.Pin(led.GPIO)
+	// 	ledPin.Output()
+	// 	if led.LED_1 {
+	// 		ledPin.High()
+	// 	} else {
+	// 		ledPin.Low()
+	// 	}
+	// }
 }
 
 func publish(client mqtt.Client) {
