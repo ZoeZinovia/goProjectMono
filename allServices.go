@@ -328,6 +328,10 @@ func main() {
 		panic(token.Error())
 	}
 
+	// Subscribe to topic
+	token := client.Subscribe(TOPIC_L, 1, nil)
+	token.Wait()
+
 	// Publish to PIR topic
 	numIterations := 10000
 	for i := 0; i < numIterations; i++ {
@@ -356,6 +360,11 @@ func main() {
 	resultString = fmt.Sprint("Humidity and temperature runtime = ", durationHT, "\n")
 	saveResultToFile("piResultsGoMono.txt", resultString)
 	fmt.Println("Humidity and temperature runtime = ", durationHT)
+
+	// Stay in loop to receive message
+	for sessionStatusLed {
+		//Do nothing
+	}
 
 	// Disconnect
 	client.Disconnect(100)
