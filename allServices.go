@@ -168,7 +168,7 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 		endLED := time.Now()
 		durationLED := endLED.Sub(startLED).Seconds()
 		resultString := fmt.Sprint("LED subsriber runtime = ", durationLED, "\n")
-		saveResultToFile("piResultsGoMono.txt", resultString)
+		saveResultToFile("piResultsGoMonoLong.txt", resultString)
 		fmt.Println("LED subsriber runtime = ", durationLED)
 	} else {
 		json.Unmarshal([]byte(msg.Payload()), &led)
@@ -333,7 +333,7 @@ func main() {
 	token.Wait()
 
 	// Publish to PIR topic
-	numIterations := 10000
+	numIterations := 1000000
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
 			sessionStatusPir = false
@@ -344,7 +344,7 @@ func main() {
 	endPIR := time.Now()
 	durationPIR := endPIR.Sub(startPIR).Seconds()
 	resultString := fmt.Sprint("PIR runtime = ", durationPIR, "\n")
-	saveResultToFile("piResultsGoMono.txt", resultString)
+	saveResultToFile("piResultsGoMonoLong.txt", resultString)
 	fmt.Println("PIR runtime = ", durationPIR)
 
 	// Publish to dht topic
@@ -358,7 +358,7 @@ func main() {
 	endHT := time.Now()
 	durationHT := endHT.Sub(startHT).Seconds()
 	resultString = fmt.Sprint("Humidity and temperature runtime = ", durationHT, "\n")
-	saveResultToFile("piResultsGoMono.txt", resultString)
+	saveResultToFile("piResultsGoMonoLong.txt", resultString)
 	fmt.Println("Humidity and temperature runtime = ", durationHT)
 
 	// Stay in loop to receive message
@@ -372,6 +372,6 @@ func main() {
 	end := time.Now()
 	duration := end.Sub(start).Seconds()
 	resultString = fmt.Sprint("Overall runtime = ", duration, "\n")
-	saveResultToFile("piResultsGoMono.txt", resultString)
+	saveResultToFile("piResultsGoMonoLong.txt", resultString)
 	fmt.Println("Overall runtime = ", duration)
 }

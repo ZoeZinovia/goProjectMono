@@ -4,7 +4,7 @@
 
 start=$(date +%s.%N)
 
-/usr/bin/time -v -o memoryResultsGoMono.txt -a ./allServices $1;
+/usr/bin/time -v -o memoryResultsGoMonoLong.txt -a ./allServices $1;
 
 end=$(date +%s.%N)
 
