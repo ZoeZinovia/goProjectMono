@@ -333,7 +333,7 @@ func main() {
 	token.Wait()
 
 	// Publish to PIR topic
-	numIterations := 1000000
+	numIterations := 100000
 	for i := 0; i < numIterations; i++ {
 		if i == numIterations-1 {
 			sessionStatusPir = false
